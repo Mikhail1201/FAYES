@@ -1,2 +1,2 @@
 # AYES
-A project made to recognize sort of fruits and add them to a database where they will be shown in a api. This project was made as the final project of Digital Electronics having as its purpose to integrate the ESP32, YOLOv8 and an inventory api to work together.
+A project made to recognize sort of fruits and add them to a database where they will be shown in a api. This project was made as the final project of Digital Electronics having as its purpose to integrate the Fireabase database, an inventory API, YOLOv8 and an ESP32 to work together as a sofware (FAYES).
