@@ -1,3 +1,6 @@
+# FAYES
+A project made to recognize sort of fruits and add them to a database where they will be shown in a api. This project was made as the final project of Digital Electronics having as its purpose to integrate the Fireabase database, an inventory API, YOLOv8 and an ESP32 to work together as a sofware (FAYES).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
