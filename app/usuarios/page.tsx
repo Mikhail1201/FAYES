@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef, MouseEvent, FormEvent, ReactNode } from "react";
 import { auth } from "../firebase/config";
 import {
-  onAuthStateChanged,
   EmailAuthProvider,
   reauthenticateWithCredential
 } from "firebase/auth";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import {
   Trash,
@@ -32,7 +33,6 @@ async function fetchUsers() {
     const normalizeDate = (val: any): string | null => {
       if (val == null) return null;
       if (typeof val === "object") {
-        // Firestore Timestamp-like object
         if (typeof val.seconds === "number") {
           const ms = val.seconds * 1000 + (val.nanoseconds ? Math.floor(val.nanoseconds / 1e6) : 0);
           const d = new Date(ms);
@@ -76,7 +76,6 @@ async function fetchUsers() {
     return [];
   }
 }
-
 
 async function safeJson(res: Response) {
   try {
@@ -147,26 +146,56 @@ export default function UsuariosPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
-
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [showMenu, setShowMenu] = useState(false);
 
   const tableRef = useRef<HTMLDivElement | null>(null);
 
-  /* ------------------------ AUTH & LOAD USERS ------------------------ */
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/login");
-      else loadUsers();
-    });
+  /* ---------------- AUTH & ROLE VERIFICATION (NO LOADER) ---------------- */
 
-    return () => unsub();
-  }, []);
+  const [user, loading] = useAuthState(auth);
+  const [roleChecked, setRoleChecked] = useState(false);
+  const [userRole, setUserRole] = useState("");
 
   const loadUsers = async () => {
     const data = await fetchUsers();
     setUsers(data);
   };
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    const verify = async () => {
+      if (!user) return;
+
+      const db = getFirestore();
+      const snap = await getDoc(doc(db, "users", user.uid));
+
+      const data = snap.exists() ? snap.data() : {};
+      const role = data.role || "";
+
+      setUserRole(role);
+
+      if (role !== "admin" && role !== "superadmin") {
+        router.push("/");
+        return;
+      }
+
+      await loadUsers();
+      setRoleChecked(true);
+    };
+
+    verify();
+  }, [user]);
+
+  // 🔥 No renderizamos nada hasta que pase verificación (SIN loader)
+  if (loading || !user || !roleChecked) {
+    return null;
+  }
 
   /* ------------------------ HANDLE ROW CLICK ------------------------ */
 
@@ -233,7 +262,6 @@ export default function UsuariosPage() {
     }
 
     try {
-      // Reautenticar admin antes de eliminar
       const credential = EmailAuthProvider.credential(
         currentUser.email!,
         deletePassword
@@ -241,18 +269,16 @@ export default function UsuariosPage() {
 
       await reauthenticateWithCredential(currentUser, credential);
 
-      // Ahora sí eliminar
       await deleteUser(selectedUser.id);
 
       setShowDeleteModal(false);
       setShowMenu(false);
       setDeletePassword("");
       loadUsers();
-    } catch (err: any) {
+    } catch {
       setDeleteError("Contraseña incorrecta.");
     }
   };
-
 
   /* -------------------------- RENDER PAGE ---------------------------- */
 
@@ -386,7 +412,6 @@ export default function UsuariosPage() {
                 <option value="user">Usuario</option>
               </select>
 
-              {/* Nuevo campo de contraseña opcional */}
               <input
                 name="password"
                 type="password"
