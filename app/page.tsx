@@ -20,7 +20,6 @@ export default function DashboardPage() {
       if (!user) router.push("/login");
       else setUserName(user.email?.split("@")[0] || "User");
     });
-
     return () => unsub();
   }, [router]);
 
@@ -34,7 +33,7 @@ export default function DashboardPage() {
       
       {/* Sidebar */}
       <Sidebar onLogout={handleLogout} />
-
+      
       {/* MAIN */}
       <main className="flex-1 p-10">
 
