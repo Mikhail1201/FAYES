@@ -4,23 +4,73 @@ import SidebarItem from "./SidebarItem";
 import {
   Home,
   Folder,
-  Settings,
-  HelpCircle,
-  LogOut,
   User,
-  Apple
+  Apple,
+  LogOut
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { auth } from "../app/firebase/config";
+import { useAuthState } from "react-firebase-hooks/auth";
 
-export default function Sidebar({ onLogout }: { onLogout: () => void }) {
+export default function Sidebar({
+  onLogout,
+}: {
+  onLogout: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+  const [user] = useAuthState(auth);
+  const [userRole, setUserRole] = useState<string>("");
+  useEffect(() => {
+      const verifyRole = async () => {
+        if (!user) return;
+  
+        const db = getFirestore();
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const data = snap.exists() ? snap.data() : {};
+  
+        const role = data.role || "";
+  
+        setUserRole(role);
+      }
+      verifyRole();
+    }, [user]);
+
+  const visibilityUser = userRole ? userRole === "user" || userRole === "admin" || userRole === "superadmin" : false ;
+  const visibilityAdmin = userRole ? userRole === "admin" || userRole === "superadmin" : false;
+  const visibilitySuperAdmin = userRole ? userRole === "superadmin" : false;
 
   const menu = [
-    { label: "Dashboard", icon: <Home size={20} />, path: "/" },
-    { label: "Inventario", icon: <Folder size={20} />, path: "/inventario" },
-    { label: "Administrar Usuarios", icon: <User size={20} />, path: "/usuarios" },
-    { label: "Products", icon: <Apple size={20} />, path: "/productos" },
+    {
+      label: "Dashboard",
+      icon: <Home size={20} />,
+      path: "/",
+      visible: visibilityUser,
+    },
+
+    {
+      label: "Inventario",
+      icon: <Folder size={20} />,
+      path: "/inventario",
+      visible: visibilityUser,
+
+    },
+
+    {
+      label: "Administrar Usuarios",
+      icon: <User size={20} />,
+      path: "/usuarios",
+      visible: visibilityAdmin,
+    },
+
+    {
+      label: "Productos",
+      icon: <Apple size={20} />,
+      path: "/productos",
+      visible: visibilityUser,
+    },
   ];
 
   return (
@@ -40,6 +90,7 @@ export default function Sidebar({ onLogout }: { onLogout: () => void }) {
             label={item.label}
             active={pathname === item.path}
             onClick={() => router.push(item.path)}
+            visible={item.visible}
           />
         ))}
 

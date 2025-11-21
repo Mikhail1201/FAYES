@@ -12,7 +12,35 @@ if (!getApps().length) {
 const db = admin.firestore();
 
 /* ---------------------------------------------
-   🔒 Validar token + rol (admin o superadmin)
+   🔓 verifyUser → permite usuario, admin, superadmin
+----------------------------------------------*/
+async function verifyUser(req) {
+  const authHeader = req.headers.get("authorization") || "";
+  const idToken = authHeader.startsWith("Bearer ")
+    ? authHeader.replace("Bearer ", "")
+    : null;
+
+  if (!idToken) return { error: "Missing Authorization header", status: 401 };
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    const userDoc = await db.collection("users").doc(uid).get();
+    const userRole = userDoc.exists ? userDoc.data().role : null;
+
+    if (!["user", "admin", "superadmin"].includes(userRole)) {
+      return { error: "Forbidden: Invalid role", status: 403 };
+    }
+
+    return { uid, role: userRole, email: userDoc.data().email };
+  } catch (e) {
+    return { error: "Invalid or expired token", status: 401 };
+  }
+}
+
+/* ---------------------------------------------
+   🔒 verifyAdmin → SOLO admin y superadmin
 ----------------------------------------------*/
 async function verifyAdmin(req) {
   const authHeader = req.headers.get("authorization") || "";
@@ -40,10 +68,10 @@ async function verifyAdmin(req) {
 }
 
 /* --------------------------------------------------
-   📌 1. GET – Obtener todos los productos
+   📌 1. GET – Obtener todos los productos (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function GET(req) {
-  const auth = await verifyAdmin(req);
+  const auth = await verifyUser(req); // ← Se permite usuario normal
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -64,10 +92,10 @@ export async function GET(req) {
 }
 
 /* --------------------------------------------------
-   📌 2. POST – Crear producto
+   📌 2. POST – Crear producto (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function POST(req) {
-  const auth = await verifyAdmin(req);
+  const auth = await verifyUser(req); // ← CAMBIO
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -104,10 +132,10 @@ export async function POST(req) {
 }
 
 /* --------------------------------------------------
-   📌 3. PUT – Actualizar producto
+   📌 3. PUT – Actualizar producto (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function PUT(req) {
-  const auth = await verifyAdmin(req);
+  const auth = await verifyUser(req); // ← CAMBIO
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -140,10 +168,10 @@ export async function PUT(req) {
 }
 
 /* --------------------------------------------------
-   📌 4. DELETE – Eliminar producto
+   📌 4. DELETE – Eliminar producto (solo admin/superadmin)
 ---------------------------------------------------*/
 export async function DELETE(req) {
-  const auth = await verifyAdmin(req);
+  const auth = await verifyAdmin(req); // ← SOLO admin/superadmin
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {

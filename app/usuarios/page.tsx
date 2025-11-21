@@ -279,14 +279,13 @@ export default function UsuariosPage() {
       setDeleteError("Contraseña incorrecta.");
     }
   };
-
   /* -------------------------- RENDER PAGE ---------------------------- */
 
   return (
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
       {/* SIDEBAR */}
-      <Sidebar onLogout={() => auth.signOut()} />
+      <Sidebar userRole={userRole} onLogout={() => auth.signOut()} />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-5 sm:p-10">

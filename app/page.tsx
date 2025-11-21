@@ -42,12 +42,6 @@ export default function DashboardPage() {
       setUserRole(role);
       setUserName(data.name || user.email?.split("@")[0] || "User");
 
-      // ⛔ Si el usuario NO es admin/superadmin → lo sacas
-      if (role !== "admin" && role !== "superadmin") {
-        router.push("/no-access"); // O "/"
-        return;
-      }
-
       setRoleChecked(true);
     };
 

@@ -120,11 +120,6 @@ export default function ProductosPage() {
 
       setUserRole(role);
 
-      if (role !== "admin" && role !== "superadmin") {
-        router.push("/");
-        return;
-      }
-
       await loadProducts();
       setRoleChecked(true);
     };
@@ -179,7 +174,7 @@ export default function ProductosPage() {
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
       {/* SIDEBAR */}
-      <Sidebar onLogout={() => auth.signOut()} />
+      <Sidebar userRole={userRole} onLogout={() => auth.signOut()} />
 
       <main className="flex-1 p-5 sm:p-10 flex gap-10 relative">
 
