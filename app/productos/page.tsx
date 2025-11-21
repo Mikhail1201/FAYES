@@ -174,7 +174,7 @@ export default function ProductosPage() {
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
       {/* SIDEBAR */}
-      <Sidebar userRole={userRole} onLogout={() => auth.signOut()} />
+      <Sidebar onLogout={() => auth.signOut()} />
 
       <main className="flex-1 p-5 sm:p-10 flex gap-10 relative">
 
