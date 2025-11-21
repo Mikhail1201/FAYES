@@ -20,7 +20,7 @@ export default function Sidebar({ onLogout }: { onLogout: () => void }) {
     { label: "Dashboard", icon: <Home size={20} />, path: "/" },
     { label: "Inventario", icon: <Folder size={20} />, path: "/inventario" },
     { label: "Administrar Usuarios", icon: <User size={20} />, path: "/usuarios" },
-    { label: "Products", icon: <Apple size={20} />, path: "/products" },
+    { label: "Products", icon: <Apple size={20} />, path: "/productos" },
   ];
 
   return (
