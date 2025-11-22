@@ -82,6 +82,7 @@ export default function ProductosPage() {
   type Product = {
     id: string;
     name: string;
+    price: number;
   };
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -185,7 +186,7 @@ export default function ProductosPage() {
   return (
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
-      {/* 🔥 NOTIFICACIONES COMO EN USUARIOS */}
+      {/* 🔥 NOTIFICACIONES */}
       <div className="z-51">
         <ErrorDiv message={error} onClose={() => setError("")} />
         <SuccessDiv message={success} onClose={() => setSuccess("")} />
@@ -194,10 +195,10 @@ export default function ProductosPage() {
       {/* SIDEBAR */}
       <Sidebar onLogout={() => auth.signOut()} />
 
-      <main className="flex-1 p-5 sm:p-10 flex gap-10 relative">
+      <main className="flex-1 p-5 sm:p-10 flex flex-col lg:flex-row gap-10 relative">
 
         {/* LEFT: ACTION BUTTONS */}
-        <div className="flex flex-col gap-6 w-1/2">
+        <div className="flex flex-col gap-6 w-full lg:w-1/2">
           <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
             Administrar Productos
           </h1>
@@ -212,7 +213,7 @@ export default function ProductosPage() {
           <button
             onClick={() => selectedProduct && setShowUpdateModal(true)}
             disabled={!selectedProduct}
-            className="cursor-pointer w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xl font-semibold transition disabled:bg-gray-400"
+            className="cursor-pointer w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xl font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             Actualizar Producto
           </button>
@@ -220,20 +221,22 @@ export default function ProductosPage() {
           <button
             onClick={() => selectedProduct && setShowDeleteModal(true)}
             disabled={!selectedProduct}
-            className="cursor-pointer w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xl font-semibold transition disabled:bg-gray-400"
+            className="cursor-pointer w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xl font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             Eliminar Producto
           </button>
 
           {selectedProduct && (
-            <p className="text-gray-700 dark:text-gray-300 mt-4">
-              Producto seleccionado: <b>{selectedProduct.name}</b>
-            </p>
+            <div className="text-gray-700 dark:text-gray-300 mt-4 p-4 bg-white/50 dark:bg-white/10 rounded-lg">
+              <p><b>Producto seleccionado:</b></p>
+              <p className="mt-2">Nombre: {selectedProduct.name}</p>
+              <p>Precio: ${selectedProduct.price.toFixed(2)}</p>
+            </div>
           )}
         </div>
 
         {/* RIGHT: PRODUCT LIST */}
-        <div className="w-1/2 bg-white/70 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-6 max-h-[80vh] overflow-auto">
+        <div className="w-full lg:w-1/2 bg-white/70 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-6 max-h-[80vh] overflow-auto">
 
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Lista de Productos
@@ -243,6 +246,7 @@ export default function ProductosPage() {
             <thead>
               <tr className="bg-gray-200/70 dark:bg-gray-700/40 text-sm">
                 <th className="p-3">Nombre</th>
+                <th className="p-3">Precio</th>
               </tr>
             </thead>
 
@@ -256,6 +260,7 @@ export default function ProductosPage() {
                   }`}
                 >
                   <td className="p-3">{p.name}</td>
+                  <td className="p-3">${p.price ? p.price.toFixed(2) : "0.00"}</td>
                 </tr>
               ))}
             </tbody>
@@ -263,7 +268,7 @@ export default function ProductosPage() {
 
         </div>
 
-        <div className="absolute top-6 right-6">
+        <div className="absolute-top-6 absolute-right-6">
           <ThemeSwitch />
         </div>
       </main>
@@ -273,7 +278,9 @@ export default function ProductosPage() {
       {/* ADD MODAL */}
       {showAddModal && (
         <Modal onClose={() => setShowAddModal(false)}>
-          <h2 className="modal-title">Añadir Producto</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Añadir Producto
+          </h2>
 
           <form
             onSubmit={async (e: FormEvent<HTMLFormElement>) => {
@@ -282,6 +289,7 @@ export default function ProductosPage() {
 
               const res = await createProduct({
                 name: form.get("name"),
+                price: form.get("price"),
               });
 
               if (res.error) {
@@ -293,13 +301,34 @@ export default function ProductosPage() {
               setShowAddModal(false);
               loadProducts();
             }}
-            className="modal-form"
+            className="flex flex-col gap-3"
           >
-            <input name="name" placeholder="Nombre" className="modal-input" required />
+            <input 
+              name="name" 
+              placeholder="Nombre del producto" 
+              className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" 
+              required 
+            />
 
-            <div className="modal-buttons">
-              <button className="btn-primary cursor-pointer">Crear</button>
-              <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary cursor-pointer">
+            <input 
+              name="price" 
+              type="number" 
+              step="0.01"
+              min="0"
+              placeholder="Precio" 
+              className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" 
+              required 
+            />
+
+            <div className="flex gap-3 mt-2">
+              <button className="cursor-pointer flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition">
+                Crear
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowAddModal(false)} 
+                className="cursor-pointer flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 py-2 rounded-lg transition"
+              >
                 Cancelar
               </button>
             </div>
@@ -310,7 +339,9 @@ export default function ProductosPage() {
       {/* UPDATE MODAL */}
       {showUpdateModal && selectedProduct && (
         <Modal onClose={() => setShowUpdateModal(false)}>
-          <h2 className="modal-title">Actualizar Producto</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Actualizar Producto
+          </h2>
 
           <form
             onSubmit={async (e: FormEvent<HTMLFormElement>) => {
@@ -319,6 +350,7 @@ export default function ProductosPage() {
 
               const res = await updateProduct(selectedProduct.id, {
                 name: form.get("name"),
+                price: form.get("price"),
               });
 
               if (res.error) {
@@ -326,18 +358,39 @@ export default function ProductosPage() {
                 return;
               }
 
-              setSuccess("Producto actualizado.");
+              setSuccess("Producto actualizado correctamente.");
               setShowUpdateModal(false);
               setSelectedProduct(null);
               loadProducts();
             }}
-            className="modal-form"
+            className="flex flex-col gap-3"
           >
-            <input name="name" defaultValue={selectedProduct.name} className="modal-input" required />
+            <input 
+              name="name" 
+              defaultValue={selectedProduct.name} 
+              className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" 
+              required 
+            />
 
-            <div className="modal-buttons">
-              <button className="btn-primary cursor-pointer">Guardar</button>
-              <button type="button" onClick={() => setShowUpdateModal(false)} className="btn-secondary cursor-pointer">
+            <input 
+              name="price" 
+              type="number" 
+              step="0.01"
+              min="0"
+              defaultValue={selectedProduct.price}
+              className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" 
+              required 
+            />
+
+            <div className="flex gap-3 mt-2">
+              <button className="cursor-pointer flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition">
+                Guardar
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowUpdateModal(false)} 
+                className="cursor-pointer flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 py-2 rounded-lg transition"
+              >
                 Cancelar
               </button>
             </div>
@@ -347,35 +400,48 @@ export default function ProductosPage() {
 
       {/* DELETE MODAL */}
       {showDeleteModal && selectedProduct && (
-        <Modal onClose={() => setShowDeleteModal(false)}>
-          <h2 className="modal-title text-red-500">Eliminar Producto</h2>
+        <Modal onClose={() => {
+          setShowDeleteModal(false);
+          setDeletePassword("");
+          setDeleteError("");
+        }}>
+          <h2 className="text-2xl font-semibold text-red-500 mb-4">
+            Eliminar Producto
+          </h2>
 
           <p className="my-4 text-gray-700 dark:text-gray-300">
-            Para eliminar <b>{selectedProduct.name}</b> confirma tu contraseña.
+            Para eliminar <b>{selectedProduct.name}</b> (${selectedProduct.price.toFixed(2)}) confirma tu contraseña.
           </p>
 
           <input
             type="password"
             placeholder="Tu contraseña"
-            className="modal-input"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 mb-2"
             value={deletePassword}
             onChange={(e) => setDeletePassword(e.target.value)}
             required
           />
 
           {deleteError && (
-            <p className="text-red-500 text-sm mt-1">{deleteError}</p>
+            <p className="text-red-500 text-sm mb-3">{deleteError}</p>
           )}
 
-          <div className="modal-buttons mt-4">
-            <button onClick={handleDelete} className="btn-danger cursor-pointer">
+          <div className="flex gap-3 mt-4">
+            <button 
+              onClick={handleDelete} 
+              className="cursor-pointer flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition"
+            >
               Confirmar eliminación
             </button>
 
             <button
               type="button"
-              onClick={() => setShowDeleteModal(false)}
-              className="btn-secondary cursor-pointer"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletePassword("");
+                setDeleteError("");
+              }}
+              className="cursor-pointer flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 py-2 rounded-lg transition"
             >
               Cancelar
             </button>
@@ -394,7 +460,7 @@ function Modal({ children, onClose }: { children: ReactNode; onClose: () => void
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4">
       <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl w-full max-w-md shadow-xl relative">
         <button
-          className="cursor-pointer absolute right-4 top-3 text-xl text-gray-600 dark:text-gray-300"
+          className="cursor-pointer absolute right-4 top-3 text-xl text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
           onClick={onClose}
         >
           ✕

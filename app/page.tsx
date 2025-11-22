@@ -65,7 +65,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-s creen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
+    <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
       {/* Sidebar */}
       <Sidebar onLogout={handleLogoutVoid} />

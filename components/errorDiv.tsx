@@ -20,7 +20,7 @@ export default function ErrorDiv({ message, onClose }: ErrorDivProps) {
         setTimeout(() => {
           onClose();
         }, 300); // ms debe coincidir con la duración de fade-out
-      }, 5000);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }

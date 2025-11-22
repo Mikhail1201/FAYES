@@ -18,7 +18,7 @@ export default function SuccessDiv({ message, onClose }: SuccessDivProps) {
         setTimeout(() => {
           onClose();
         }, 300); // misma duración que fade-out
-      }, 5000);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }

@@ -71,7 +71,7 @@ async function verifyAdmin(req) {
    📌 1. GET – Obtener todos los productos (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function GET(req) {
-  const auth = await verifyUser(req); // ← Se permite usuario normal
+  const auth = await verifyUser(req);
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -95,7 +95,7 @@ export async function GET(req) {
    📌 2. POST – Crear producto (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function POST(req) {
-  const auth = await verifyUser(req); // ← CAMBIO
+  const auth = await verifyUser(req);
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -103,7 +103,7 @@ export async function POST(req) {
     });
 
   try {
-    const { name } = await req.json();
+    const { name, price } = await req.json();
 
     if (!name) {
       return new Response(JSON.stringify({ error: "Missing name field" }), {
@@ -111,14 +111,24 @@ export async function POST(req) {
       });
     }
 
+    // Validar precio
+    const priceNum = price ? parseFloat(price) : 0;
+    if (isNaN(priceNum) || priceNum < 0) {
+      return new Response(
+        JSON.stringify({ error: "Invalid price value" }),
+        { status: 400 }
+      );
+    }
+
     const ref = await db.collection("products").add({
       name,
+      price: priceNum,
       createdAt: admin.firestore.Timestamp.now(),
     });
 
     await db.collection("logs").add({
       action: "crear",
-      details: `Producto '${name}' creado`,
+      details: `Producto '${name}' creado con precio $${priceNum}`,
       timestamp: new Date(),
       performedBy: auth.email,
     });
@@ -135,7 +145,7 @@ export async function POST(req) {
    📌 3. PUT – Actualizar producto (usuario/admin/superadmin)
 ---------------------------------------------------*/
 export async function PUT(req) {
-  const auth = await verifyUser(req); // ← CAMBIO
+  const auth = await verifyUser(req);
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
@@ -143,7 +153,7 @@ export async function PUT(req) {
     });
 
   try {
-    const { id, name } = await req.json();
+    const { id, name, price } = await req.json();
 
     if (!id || !name) {
       return new Response(
@@ -152,11 +162,23 @@ export async function PUT(req) {
       );
     }
 
-    await db.collection("products").doc(id).update({ name });
+    // Validar precio
+    const priceNum = price ? parseFloat(price) : 0;
+    if (isNaN(priceNum) || priceNum < 0) {
+      return new Response(
+        JSON.stringify({ error: "Invalid price value" }),
+        { status: 400 }
+      );
+    }
+
+    await db.collection("products").doc(id).update({ 
+      name,
+      price: priceNum,
+    });
 
     await db.collection("logs").add({
       action: "actualizar",
-      details: `Producto '${name}' actualizado`,
+      details: `Producto '${name}' actualizado (precio: $${priceNum})`,
       timestamp: new Date(),
       performedBy: auth.email,
     });
@@ -171,7 +193,7 @@ export async function PUT(req) {
    📌 4. DELETE – Eliminar producto (solo admin/superadmin)
 ---------------------------------------------------*/
 export async function DELETE(req) {
-  const auth = await verifyAdmin(req); // ← SOLO admin/superadmin
+  const auth = await verifyAdmin(req);
 
   if (auth.error)
     return new Response(JSON.stringify({ error: auth.error }), {
