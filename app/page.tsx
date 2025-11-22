@@ -10,7 +10,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import Sidebar from "@/components/Sidebar";
 import ThemeSwitch from "@/components/ThemeSwitch";
 import StatsCard from "@/components/StatsCard";
-import FakeChart from "@/components/Chart";
+import StockChart from "@/components/StockChart";
 import LowStockAlert from "@/components/LowStockAlert";
 
 /* ------------------------ API HELPERS ------------------------ */
@@ -188,10 +188,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="col-span-2 bg-white/70 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow p-6">
             <h2 className="section-title">Resumen del Proyecto</h2>
-            <FakeChart />
+            <StockChart products={products} stock={stock} />
           </div>
 
-          <div className="bg-white/70 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow p-6">
+          <div className="bg-white/70 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow p-6 h-fit">
             <h2 className="section-title mb-4">Alerta de Stock Bajo</h2>
             <LowStockAlert products={products} stock={stock} />
           </div>
