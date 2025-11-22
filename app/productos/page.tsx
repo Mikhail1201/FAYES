@@ -10,7 +10,11 @@ import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import Sidebar from "../../components/Sidebar";
 import ThemeSwitch from "../../components/ThemeSwitch";
 
-/* ------------------------ FIRESTORE / API HELPERS ------------------------ */
+// 🔥 MENSAJES
+import ErrorDiv from "../../components/ErrorDiv";
+import SuccessDiv from "../../components/SuccessDiv";
+
+/* ------------------------ API HELPERS ------------------------ */
 
 async function fetchProducts() {
   const token = await auth.currentUser?.getIdToken();
@@ -92,10 +96,13 @@ export default function ProductosPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
+  // ERROR / SUCCESS
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   // Auth / Role Check
   const [user, loading] = useAuthState(auth);
   const [roleChecked, setRoleChecked] = useState(false);
-  const [userRole, setUserRole] = useState("");
 
   /* Load products */
   const loadProducts = async () => {
@@ -118,7 +125,10 @@ export default function ProductosPage() {
       const data = snap.exists() ? snap.data() : {};
       const role = data.role || "";
 
-      setUserRole(role);
+      if (role !== "admin" && role !== "superadmin") {
+        router.push("/");
+        return;
+      }
 
       await loadProducts();
       setRoleChecked(true);
@@ -135,10 +145,11 @@ export default function ProductosPage() {
     if (!selectedProduct) return;
 
     setDeleteError("");
+    setError("");
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      setDeleteError("No hay usuario autenticado.");
+      setError("No hay usuario autenticado.");
       return;
     }
 
@@ -153,10 +164,11 @@ export default function ProductosPage() {
       const res = await deleteProduct(selectedProduct.id);
 
       if (res.error) {
-        setDeleteError(res.error || "Error al eliminar.");
+        setError(res.error);
         return;
       }
 
+      setSuccess("Producto eliminado correctamente.");
       setShowDeleteModal(false);
       setSelectedProduct(null);
       setDeletePassword("");
@@ -164,7 +176,7 @@ export default function ProductosPage() {
       loadProducts();
 
     } catch {
-      setDeleteError("Contraseña incorrecta.");
+      setError("Contraseña incorrecta.");
     }
   };
 
@@ -172,6 +184,12 @@ export default function ProductosPage() {
 
   return (
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
+
+      {/* 🔥 NOTIFICACIONES COMO EN USUARIOS */}
+      <div className="z-51">
+        <ErrorDiv message={error} onClose={() => setError("")} />
+        <SuccessDiv message={success} onClose={() => setSuccess("")} />
+      </div>
 
       {/* SIDEBAR */}
       <Sidebar onLogout={() => auth.signOut()} />
@@ -245,7 +263,7 @@ export default function ProductosPage() {
 
         </div>
 
-        <div className="absolute-top-6 absolute-right-6">
+        <div className="absolute top-6 right-6">
           <ThemeSwitch />
         </div>
       </main>
@@ -256,15 +274,22 @@ export default function ProductosPage() {
       {showAddModal && (
         <Modal onClose={() => setShowAddModal(false)}>
           <h2 className="modal-title">Añadir Producto</h2>
+
           <form
             onSubmit={async (e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const form = new FormData(e.target as HTMLFormElement);
 
-              await createProduct({
+              const res = await createProduct({
                 name: form.get("name"),
               });
 
+              if (res.error) {
+                setError(res.error);
+                return;
+              }
+
+              setSuccess("Producto creado correctamente.");
               setShowAddModal(false);
               loadProducts();
             }}
@@ -286,15 +311,22 @@ export default function ProductosPage() {
       {showUpdateModal && selectedProduct && (
         <Modal onClose={() => setShowUpdateModal(false)}>
           <h2 className="modal-title">Actualizar Producto</h2>
+
           <form
             onSubmit={async (e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const form = new FormData(e.target as HTMLFormElement);
 
-              await updateProduct(selectedProduct.id, {
+              const res = await updateProduct(selectedProduct.id, {
                 name: form.get("name"),
               });
 
+              if (res.error) {
+                setError(res.error);
+                return;
+              }
+
+              setSuccess("Producto actualizado.");
               setShowUpdateModal(false);
               setSelectedProduct(null);
               loadProducts();

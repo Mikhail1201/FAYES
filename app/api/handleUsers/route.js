@@ -141,9 +141,18 @@ export async function PUT(req) {
       );
     }
 
-    const updateData = { displayName: name };
+    // No permitir asignar superadmin si no es superadmin
+    if (role === "superadmin" && auth.role !== "superadmin") {
+      return new Response(
+        JSON.stringify({
+          error: "Only superadmin can assign superadmin role",
+        }),
+        { status: 403 }
+      );
+    }
 
-    // Si trae contraseña, actualizarla
+    // Construir datos para AUTH
+    const updateData = { displayName: name };
     if (password && password.trim() !== "") {
       updateData.password = password;
     }
@@ -157,26 +166,7 @@ export async function PUT(req) {
       role,
     });
 
-
-    // No permitir modificar superadmins si el admin NO ES superadmin
-    if (role === "superadmin" && auth.role !== "superadmin") {
-      return new Response(
-        JSON.stringify({
-          error: "Only superadmin can assign superadmin role",
-        }),
-        { status: 403 }
-      );
-    }
-
-    await admin.auth().updateUser(uid, { displayName: name });
-
-    await updateUser(selectedUser.id, {
-      name: form.get("name"),
-      role: form.get("role"),
-      password: form.get("password") || null, // solo enviar si existe
-    });
-
-
+    // Registrar en logs
     await db.collection("logs").add({
       action: "actualizar",
       details: `Usuario '${name}' actualizado (rol: ${role})`,

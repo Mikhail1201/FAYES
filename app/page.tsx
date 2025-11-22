@@ -58,11 +58,17 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  // Wrap the async logout so a void-returning function can be passed where () => void is expected
+  const handleLogoutVoid = () => {
+    // intentionally not awaited so this returns void
+    void handleLogout();
+  };
+
   return (
-    <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
+    <div className="min-h-s creen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
       {/* Sidebar */}
-      <Sidebar onLogout={handleLogout} />
+      <Sidebar onLogout={handleLogoutVoid} />
 
       {/* MAIN */}
       <main className="flex-1 p-10">

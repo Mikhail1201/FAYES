@@ -12,7 +12,7 @@ import {
 import { FirebaseError } from "firebase/app";
 import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import ErrorDiv from "../../components/errorDiv";
+import ErrorDiv from "../../components/ErrorDiv";
 import { motion } from "framer-motion";
 import ThemeSwitch from "../../components/ThemeSwitch";
 

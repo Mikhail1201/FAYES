@@ -13,8 +13,13 @@ import {
   Trash,
   PencilLine,
 } from "lucide-react";
+
 import Sidebar from "../../components/Sidebar";
 import ThemeSwitch from "../../components/ThemeSwitch";
+
+// 🔥 SOLO AÑADIDO:
+import ErrorDiv from "../../components/ErrorDiv";
+import SuccessDiv from "../../components/SuccessDiv";
 
 /* ------------------------ UTIL FIRESTORE METHODS ------------------------ */
 
@@ -117,8 +122,7 @@ async function deleteUser(uid: string) {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+      Authorization: `Bearer ${token}`},
     body: JSON.stringify({ uid }),
   });
   return await safeJson(res);
@@ -151,11 +155,15 @@ export default function UsuariosPage() {
 
   const tableRef = useRef<HTMLDivElement | null>(null);
 
-  /* ---------------- AUTH & ROLE VERIFICATION (NO LOADER) ---------------- */
+  /* ----- AUTH ----- */
 
   const [user, loading] = useAuthState(auth);
   const [roleChecked, setRoleChecked] = useState(false);
   const [userRole, setUserRole] = useState("");
+
+  // 🔥 SOLO AÑADIDO:
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const loadUsers = async () => {
     const data = await fetchUsers();
@@ -192,10 +200,7 @@ export default function UsuariosPage() {
     verify();
   }, [user]);
 
-  // 🔥 No renderizamos nada hasta que pase verificación (SIN loader)
-  if (loading || !user || !roleChecked) {
-    return null;
-  }
+  if (loading || !user || !roleChecked) return null;
 
   /* ------------------------ HANDLE ROW CLICK ------------------------ */
 
@@ -216,16 +221,21 @@ export default function UsuariosPage() {
 
   const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const form = new FormData(e.target as HTMLFormElement);
 
-    await createUser({
+    const res = await createUser({
       name: form.get("name"),
       email: form.get("email"),
       password: form.get("password"),
       role: form.get("role"),
     });
 
+    if (!res || res.error) {
+      setError(res?.error || "Error al crear usuario.");
+      return;
+    }
+
+    setSuccess("Usuario creado exitosamente.");
     setShowCreateModal(false);
     loadUsers();
   };
@@ -240,11 +250,18 @@ export default function UsuariosPage() {
 
     const form = new FormData(e.target as HTMLFormElement);
 
-    await updateUser(selectedUser.id, {
+    const res = await updateUser(selectedUser.id, {
       name: form.get("name"),
       role: form.get("role"),
     });
 
+    if (!res || res.error) {
+      setError(res?.error || "Error al actualizar usuario.");
+      console.log(res?.error);
+      return;
+    }
+
+    setSuccess("Usuario actualizado correctamente.");
     setShowEditModal(false);
     setShowMenu(false);
     loadUsers();
@@ -257,7 +274,7 @@ export default function UsuariosPage() {
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      setDeleteError("No hay usuario autenticado.");
+      setError("No hay usuario autenticado.");
       return;
     }
 
@@ -269,23 +286,33 @@ export default function UsuariosPage() {
 
       await reauthenticateWithCredential(currentUser, credential);
 
-      await deleteUser(selectedUser.id);
+      const res = await deleteUser(selectedUser.id);
 
+      if (!res || res.error) {
+        setError(res?.error || "No se pudo eliminar el usuario.");
+        return;
+      }
+
+      setSuccess("Usuario eliminado correctamente.");
       setShowDeleteModal(false);
       setShowMenu(false);
       setDeletePassword("");
       loadUsers();
     } catch {
-      setDeleteError("Contraseña incorrecta.");
+      setError("Contraseña incorrecta.");
     }
   };
+
   /* -------------------------- RENDER PAGE ---------------------------- */
 
   return (
     <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
-
+      <div className="z-51">
+        <ErrorDiv message={error} onClose={() => setError("")} />
+        <SuccessDiv message={success} onClose={() => setSuccess("")} />
+      </div>
       {/* SIDEBAR */}
-      <Sidebar userRole={userRole} onLogout={() => auth.signOut()} />
+      <Sidebar onLogout={() => auth.signOut()}/>
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-5 sm:p-10">
