@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, MouseEvent, FormEvent, ReactNode } from "react";
 import { auth } from "../firebase/config";
 import { onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "../../components/Sidebar";
@@ -129,20 +131,12 @@ export default function InventarioPage() {
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [showMenu, setShowMenu] = useState(false);
 
-  /* ------------------------ AUTH & LOAD DATA ------------------------ */
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/login");
-      else loadData();
-    });
+  /* ----- AUTH & ROLE CHECK ----- */
+  const [user, loading] = useAuthState(auth);
+  const [roleChecked, setRoleChecked] = useState(false);
+  const [userRole, setUserRole] = useState("");
 
-    return () => unsub();
-  }, []);
-
-  const loadData = async () => {
-    await Promise.all([loadProducts(), loadStock()]);
-  };
-
+  /* ------------------------ LOAD DATA FUNCTIONS ------------------------ */
   const loadProducts = async () => {
     const data = await fetchProducts();
     setProducts(data);
@@ -158,6 +152,43 @@ export default function InventarioPage() {
     setLocalQuantities(qtyMap);
     setStock(data);
   };
+
+  const loadData = async () => {
+    await Promise.all([loadProducts(), loadStock()]);
+  };
+
+  /* ------------------------ AUTH & LOAD DATA ------------------------ */
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    const verifyRole = async () => {
+      if (!user) return;
+
+      const db = getFirestore();
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const role = data.role || "";
+
+      setUserRole(role);
+
+      // Verificar que el usuario tenga un rol válido
+      if (!["user", "admin", "superadmin"].includes(role)) {
+        router.push("/");
+        return;
+      }
+
+      await loadData();
+      setRoleChecked(true);
+    };
+
+    verifyRole();
+  }, [user]);
+
+  if (loading || !user || !roleChecked) return null;
 
   /* ------------------------ TABLE ACTIONS ------------------------ */
 
