@@ -39,5 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# python cache
+__pycache__/
+*.pyc
 
 serviceAccountKey.json
