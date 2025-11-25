@@ -1,3 +1,15 @@
+import sys
+
+# -------------------------------------
+# 🔵 LEER JWT QUE VIENE DESDE NEXT.JS
+# -------------------------------------
+if len(sys.argv) < 2:
+    print("[ERROR] No se recibió JWT como argumento.")
+    exit(1)
+
+SESSION_JWT = sys.argv[1]
+print("[INFO] JWT recibido correctamente:", SESSION_JWT)
+# -------------------------------------
 import cv2
 import requests
 import time
@@ -8,7 +20,7 @@ from ultralytics import YOLO
 ESP32_URL = "http://192.168.80.36:81/stream"
 DELAY_SECONDS = 10
 
-BACKEND_URL = "http://tu-api.com/api/stock"   # <-- tu endpoint PATCH real
+BACKEND_URL = "http://fayes-iota.vercel.app/api/handleInventory"   # <-- tu endpoint PATCH real
 
 model = YOLO("../models/best.pt")
 
@@ -72,8 +84,13 @@ def send_to_backend(normalized_name):
         "productName": normalized_name
     }
 
+    headers = {
+        "Authorization": f"Bearer {SESSION_JWT}",
+        "Content-Type": "application/json"
+    }
+
     try:
-        r = requests.patch(BACKEND_URL, json=body)
+        r = requests.patch(BACKEND_URL, json=body, headers=headers)
         print("[RESPUESTA BACKEND]", r.status_code, r.text)
     except Exception as e:
         print("[ERROR] No se pudo enviar PATCH:", e)

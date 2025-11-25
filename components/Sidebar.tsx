@@ -6,7 +6,8 @@ import {
   Folder,
   User,
   Apple,
-  LogOut
+  LogOut,
+  Camera,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -57,7 +58,11 @@ export default function Sidebar({
       visible: visibilityUser,
 
     },
-
+    {label: "Escáner",
+      icon: <Camera size={20} />,
+      path: "/scanner",
+      visible: visibilityUser,
+    }, 
     {
       label: "Administrar Usuarios",
       icon: <User size={20} />,
