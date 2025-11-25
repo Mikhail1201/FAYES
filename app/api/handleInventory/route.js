@@ -216,3 +216,77 @@ export async function DELETE(req) {
     return new Response(JSON.stringify({ error: e.message }), { status: 400 });
   }
 }
+/* --------------------------------------------------
+   📌 PATCH – Incrementar stock o pedir al frontend crear el producto.
+      - Busca productos por su *nombre* (no ID)
+---------------------------------------------------*/
+export async function PATCH(req) {
+  const auth = await verifyUser(req);
+  if (auth.error)
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: auth.status,
+    });
+
+  try {
+    const { productName } = await req.json();
+
+    if (!productName)
+      return new Response(
+        JSON.stringify({ error: "Missing productName" }),
+        { status: 400 }
+      );
+
+    // --- Buscar por NOMBRE (no ID) ---
+    const productsRef = db.collection("products");
+    const querySnap = await productsRef
+      .where("name", "==", productName)
+      .limit(1)
+      .get();
+
+    if (querySnap.empty) {
+      // Producto NO existe → el frontend debe pedir el precio para crearlo
+      return new Response(
+        JSON.stringify({
+          success: false,
+          needsPrice: true,
+          productName,
+        }),
+        { status: 200 }
+      );
+    }
+
+    // Producto existe → obtener ID real
+    const productDoc = querySnap.docs[0];
+    const productId = productDoc.id;
+
+    // Stock reference
+    const stockRef = db.collection("stock").doc(productId);
+    const stockSnap = await stockRef.get();
+
+    if (!stockSnap.exists) {
+      // Si no hay stock registrado todavía → crear quantity=1
+      await stockRef.set({
+        quantity: 1,
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+    } else {
+      const current = stockSnap.data().quantity || 0;
+      await stockRef.update({
+        quantity: current + 1,
+        updatedAt: admin.firestore.Timestamp.now(),
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        incremented: true,
+        productId,
+        productName,
+      }),
+      { status: 200 }
+    );
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 400 });
+  }
+}
