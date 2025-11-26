@@ -12,136 +12,156 @@ import ErrorDiv from "../../components/ErrorDiv";
 import SuccessDiv from "../../components/SuccessDiv";
 
 export default function ScannerPage() {
-  const router = useRouter();
+    const router = useRouter();
 
-  const [user, loading] = useAuthState(auth);
-  const [roleChecked, setRoleChecked] = useState(false);
+    const [user, loading] = useAuthState(auth);
+    const [roleChecked, setRoleChecked] = useState(false);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-  /* ---------------- AUTH CHECK ---------------- */
+    /* ---------------- AUTH CHECK ---------------- */
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [user, loading]);
+    useEffect(() => {
+        if (!loading && !user) router.push("/login");
+    }, [user, loading]);
 
-  /* ------------- ROLE CHECK (solo admin y superadmin) ------------- */
+    /* ------------- ROLE CHECK (solo admin y superadmin) ------------- */
 
-  useEffect(() => {
-    const verifyRole = async () => {
-      if (!user) return;
+    useEffect(() => {
+        const verifyRole = async () => {
+            if (!user) return;
 
-      const db = getFirestore();
-      const snap = await getDoc(doc(db, "users", user.uid));
-      const data = snap.exists() ? snap.data() : {};
+            const db = getFirestore();
+            const snap = await getDoc(doc(db, "users", user.uid));
+            const data = snap.exists() ? snap.data() : {};
 
-      const role = data.role || "";
+            const role = data.role || "";
 
-      if (role !== "user" && role !== "admin" && role !== "superadmin") {
-        router.push("/");
-        return;
-      }
+            if (role !== "user" && role !== "admin" && role !== "superadmin") {
+                router.push("/");
+                return;
+            }
 
-      setRoleChecked(true);
+            setRoleChecked(true);
+        };
+
+        verifyRole();
+    }, [user]);
+
+    if (loading || !user || !roleChecked) return null;
+
+    /* ---------------- HANDLERS ---------------- */
+
+    const handleCapture = async () => {
+        setError("");
+        setSuccess("");
+
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) {
+                setError("No hay sesión activa.");
+                return;
+            }
+
+            const res = await fetch("/api/runScanner", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                setError(data.error || "Error al iniciar el escáner.");
+                return;
+            }
+
+            setSuccess("Scanner iniciado correctamente.");
+        } catch (e) {
+            setError("Error inesperado al iniciar el escáner.");
+        }
     };
 
-    verifyRole();
-  }, [user]);
 
-  if (loading || !user || !roleChecked) return null;
+    const handleCancel = async () => {
+        setError("");
+        setSuccess("");
 
-  /* ---------------- HANDLERS ---------------- */
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) {
+                setError("No hay sesión activa.");
+                return;
+            }
 
-const handleCapture = async () => {
-  setError("");
-  setSuccess("");
+            const res = await fetch("/api/runScanner", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ action: "stop" }), // <-- AQUÍ SE PARA
+            });
 
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      setError("No hay sesión activa.");
-      return;
-    }
+            const data = await res.json();
 
-    const res = await fetch("/api/runScanner", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+            if (!res.ok || data.error) {
+                setError(data.error || "Error al detener el escáner.");
+                return;
+            }
 
-    const data = await res.json();
+            setSuccess("Scanner detenido correctamente.");
+        } catch {
+            setError("Error inesperado al detener.");
+        }
+    };
 
-    if (!res.ok || data.error) {
-      setError(data.error || "Error al iniciar el escáner.");
-      return;
-    }
+    /* ---------------- RENDER ---------------- */
 
-    setSuccess("Scanner iniciado correctamente.");
-  } catch (e) {
-    setError("Error inesperado al iniciar el escáner.");
-  }
-};
+    return (
+        <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
 
+            {/* NOTIFICACIONES */}
+            <div className="z-50">
+                <ErrorDiv message={error} onClose={() => setError("")} />
+                <SuccessDiv message={success} onClose={() => setSuccess("")} />
+            </div>
 
-  const handleCancel = () => {
-    setError("Captura cancelada.");
-  };
+            {/* SIDEBAR */}
+            <Sidebar onLogout={() => auth.signOut()} />
 
-  /* ---------------- RENDER ---------------- */
+            <main className="flex-1 p-5 sm:p-10 relative flex flex-col items-center gap-6">
 
-  return (
-    <div className="min-h-screen bg-[#e8ebf2] dark:bg-[#0e0e12] flex">
+                <div className="top-6 right-6 absolute">
+                    <ThemeSwitch />
+                </div>
 
-      {/* NOTIFICACIONES */}
-      <div className="z-50">
-        <ErrorDiv message={error} onClose={() => setError("")} />
-        <SuccessDiv message={success} onClose={() => setSuccess("")} />
-      </div>
+                <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-10">
+                    Scanner
+                </h1>
 
-      {/* SIDEBAR */}
-      <Sidebar onLogout={() => auth.signOut()} />
+                {/* BOTONES */}
+                <div className="flex flex-col sm:flex-row gap-5 mt-10 w-full max-w-2xl">
 
-      <main className="flex-1 p-5 sm:p-10 relative flex flex-col items-center gap-6">
+                    <button
+                        onClick={handleCapture}
+                        className="cursor-pointer flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xl font-semibold transition"
+                    >
+                        Capturar
+                    </button>
 
-        <div className="top-6 right-6 absolute">
-          <ThemeSwitch />
+                    <button
+                        onClick={handleCancel}
+                        className="cursor-pointer flex-1 py-4 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-xl text-xl font-semibold transition"
+                    >
+                        Cancelar
+                    </button>
+
+                </div>
+
+            </main>
         </div>
-
-        <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-10">
-          Scanner
-        </h1>
-
-        {/* DIV CENTRAL VACÍO */}
-        <div className="w-full max-w-2xl h-96 bg-white/40 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl flex items-center justify-center text-gray-500 dark:text-gray-300 border border-gray-300/40 dark:border-gray-700/40">
-            <img
-                // src="http://192.168.80.36:81/stream"
-                src=""
-                alt="ESP32 CAM"
-                className="w-full" />
-        </div>
-
-        {/* BOTONES */}
-        <div className="flex flex-col sm:flex-row gap-5 mt-10 w-full max-w-2xl">
-
-          <button
-            onClick={handleCapture}
-            className="cursor-pointer flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xl font-semibold transition"
-          >
-            Capturar
-          </button>
-
-          <button
-            onClick={handleCancel}
-            className="cursor-pointer flex-1 py-4 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-xl text-xl font-semibold transition"
-          >
-            Cancelar
-          </button>
-
-        </div>
-
-      </main>
-    </div>
-  );
+    );
 }

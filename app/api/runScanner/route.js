@@ -1,6 +1,8 @@
 import { spawn } from "child_process";
 import path from "path";
 
+let pythonProcess = null; // ← Proceso global
+
 export async function POST(req) {
   const authHeader = req.headers.get("authorization") || "";
   const token = authHeader.replace("Bearer ", "").trim();
@@ -11,28 +13,51 @@ export async function POST(req) {
     });
   }
 
+  // Leer JSON del body para saber si es start o stop
+  let body = {};
+  try {
+    body = await req.json();
+  } catch {}
+
+  const action = body.action || "start";
+
   // Ruta absoluta del script Python
   const scriptPath = path.join(process.cwd(), "python", "main.py");
 
-  console.log("[RUNNING]", scriptPath);
-
-  // ✔ En Windows usa "python"
-  // ✔ En Linux/Mac usa "python3"
   const pythonCmd = process.platform === "win32" ? "python" : "python3";
 
-  // Ejecutar script Python con token como argumento
-  const processPy = spawn(pythonCmd, [scriptPath, token]);
+  /* ------------------ STOP ------------------ */
+  if (action === "stop") {
+    if (pythonProcess) {
+      console.log("🛑 Terminando proceso Python...");
 
-  processPy.stdout.on("data", (data) => {
+      pythonProcess.kill("SIGTERM");
+      pythonProcess = null;
+
+      return new Response(JSON.stringify({ stopped: true }), { status: 200 });
+    } else {
+      return new Response(JSON.stringify({ error: "No hay proceso activo" }), {
+        status: 400,
+      });
+    }
+  }
+
+  /* ------------------ START ------------------ */
+  console.log("[RUNNING]", scriptPath);
+
+  pythonProcess = spawn(pythonCmd, [scriptPath, token]);
+
+  pythonProcess.stdout.on("data", (data) => {
     console.log("📤 PYTHON:", data.toString());
   });
 
-  processPy.stderr.on("data", (data) => {
+  pythonProcess.stderr.on("data", (data) => {
     console.error("⚠ PYTHON ERROR:", data.toString());
   });
 
-  processPy.on("close", (code) => {
+  pythonProcess.on("close", (code) => {
     console.log("✔ Python finalizó con código:", code);
+    pythonProcess = null; // liberar referencia
   });
 
   return new Response(JSON.stringify({ started: true }), { status: 200 });
