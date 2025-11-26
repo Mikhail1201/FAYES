@@ -17,7 +17,7 @@ import numpy as np
 import re
 from ultralytics import YOLO
 
-ESP32_URL = "http://192.168.80.36:81/capture"
+ESP32_URL = "http://192.168.80.36:81/stream"
 DELAY_SECONDS = 10
 
 BACKEND_URL = "http://fayes-iota.vercel.app/api/handleInventory"   # <-- tu endpoint PATCH real
