@@ -103,9 +103,9 @@ const handleCapture = async () => {
       {/* SIDEBAR */}
       <Sidebar onLogout={() => auth.signOut()} />
 
-      <main className="flex-1 p-5 sm:p-10 relative flex flex-col items-center">
+      <main className="flex-1 p-5 sm:p-10 relative flex flex-col items-center gap-6">
 
-        <div className="absolute-top-6 absolute-right-6">
+        <div className="top-6 right-6 absolute">
           <ThemeSwitch />
         </div>
 
@@ -115,7 +115,10 @@ const handleCapture = async () => {
 
         {/* DIV CENTRAL VACÍO */}
         <div className="w-full max-w-2xl h-96 bg-white/40 dark:bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl flex items-center justify-center text-gray-500 dark:text-gray-300 border border-gray-300/40 dark:border-gray-700/40">
-          Área de previsualización del escáner
+            <img
+                src="http://192.168.80.36:81/stream"
+                alt="ESP32 CAM"
+                className="w-full" />
         </div>
 
         {/* BOTONES */}
