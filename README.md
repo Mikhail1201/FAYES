@@ -37,3 +37,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+This project was only possible to made because I've used a YOLOv8 model made by someone else, specifically by Kashi8912 (on github), and here is his repository where he uploaded the model in his readme and the code I modified to use in my main.py. Thanks Kashi8912.
+
+https://github.com/kashi8912/fruit-detection-yolov8

@@ -10,7 +10,7 @@ if (!getApps().length) {
 }
 
 const db = admin.firestore();
-
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "localhost:3000";
 /* ---------------------------------------------
    🔓 verifyUser → permite usuario, admin, superadmin
 ----------------------------------------------*/
@@ -191,8 +191,12 @@ export async function PUT(req) {
 
 /* --------------------------------------------------
    📌 4. DELETE – Eliminar producto (solo admin/superadmin)
+   🔥 Ahora también elimina el stock antes de borrar el producto
 ---------------------------------------------------*/
 export async function DELETE(req) {
+  // 1. Extraer el token una sola vez
+  const token = req.headers.get("authorization");
+
   const auth = await verifyAdmin(req);
 
   if (auth.error)
@@ -208,11 +212,44 @@ export async function DELETE(req) {
         status: 400,
       });
 
+    /* ---------------------------------------------
+       1️⃣ Eliminar primero el STOCK asociado
+    ----------------------------------------------*/
+    const inventoryDelete = await fetch(`${baseUrl}/api/handleInventory`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token, // 🔥 reenviamos el token original (que sí existe)
+      },
+      body: JSON.stringify({ productId: id }),
+    });
+
+    const inventoryResult = await inventoryDelete.json();
+    console.log("[DELETE STOCK RESULT]", inventoryResult);
+    console.log("[DELETE STOCK STATUS]", inventoryDelete.status);
+
+    // Si no existe stock, no es error
+    if (!inventoryDelete.ok && inventoryResult.error !== "El producto no existe.") {
+      return new Response(
+        JSON.stringify({
+          error: "No se pudo eliminar el stock antes del producto.",
+          details: inventoryResult,
+        }),
+        { status: 500 }
+      );
+    }
+
+    /* ---------------------------------------------
+       2️⃣ Ahora sí, eliminar PRODUCTO
+    ----------------------------------------------*/
     await db.collection("products").doc(id).delete();
 
+    /* ---------------------------------------------
+       3️⃣ Agregar log
+    ----------------------------------------------*/
     await db.collection("logs").add({
       action: "eliminar",
-      details: `Producto con ID '${id}' eliminado`,
+      details: `Producto con ID '${id}' eliminado junto con su stock relacionado.`,
       timestamp: new Date(),
       performedBy: auth.email,
     });
